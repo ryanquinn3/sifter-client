@@ -1,0 +1,44 @@
+version: '2'
+services:
+  api:
+    image: 'ryanquinn3/sifter-api:latest'
+    environment:
+      - VIRTUAL_HOST=api.sifter.dev
+
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - web-deps:/app/node_modules
+    environment:
+      - VIRTUAL_HOST=sifter.dev
+      - HOST=0.0.0.0
+
+  staging:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - VIRTUAL_HOST=staging.sifter.dev
+    volumes:
+      - ./build:/usr/share/nginx/html
+
+
+  proxy:
+    image: 'dockercloud/haproxy:latest'
+    links:
+      - api
+      - web
+      - staging
+    ports:
+      - '80:80'
+      - '443:443'
+      - '1936:1936'
+    volumes:
+      - '/var/run/docker.sock:/var/run/docker.sock'
+volumes:
+  web-deps:
